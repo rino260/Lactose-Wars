@@ -8,11 +8,11 @@ public class MouseManager : MonoBehaviour
 
     //Inspector variables to allow customizing highlight behavior
     public Material highlightMat;
-    [Range(0f, 1f)]
+    [Range(0f, 3f)]
     public float highlightOffset;
     [Range(0f, 1f)]
     public float highlightSpeed;
-    [Range(0.1f, 3f)]
+    [Range(0.1f, 4f)]
     public float highlightScale;
 
     //Internal references from which to calculate highlight information
@@ -28,6 +28,7 @@ public class MouseManager : MonoBehaviour
     void Update()
     {
         CheckMouseCollision();
+        CheckMouseClick();
     }
 
 
@@ -100,5 +101,18 @@ public class MouseManager : MonoBehaviour
         hitTile.position = Vector3.Lerp(targetPos, defaultPos, highlightSpeed);
         //Reset the hit tile's local scale
         hitTile.localScale = Vector3.Lerp(transform.localScale, defaultScale, highlightSpeed);
+    }
+
+
+    void CheckMouseClick()
+    {
+        //If we click the left mouse button and we are highlighting a tile:
+        if(Input.GetMouseButtonDown(0) && hitTile != null)
+        {
+            //Extract the X and Y coordinates from the clicked hex and call the "MoveSelectedUnit" function on our GridManager using its coordinates
+            int x = hitTile.GetComponentInChildren<HexData>().hexX;
+            int y = hitTile.GetComponentInChildren<HexData>().hexY;
+            hitTile.root.GetComponent<GridManager>().MoveSelectedUnit(x, y);
+        }
     }
 }

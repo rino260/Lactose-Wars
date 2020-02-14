@@ -289,13 +289,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 963194225}
-  m_LocalRotation: {x: 0.42261827, y: 0, z: 0, w: 0.9063079}
+  m_LocalRotation: {x: 0.5, y: 0, z: 0, w: 0.8660254}
   m_LocalPosition: {x: 0, y: 8, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 0
-  m_LocalEulerAnglesHint: {x: 50, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 60, y: 0, z: 0}
 --- !u!1 &1079986141
 GameObject:
   m_ObjectHideFlags: 0
@@ -346,6 +346,7 @@ MonoBehaviour:
   - hexTilePrefab: {fileID: 6886942572562293357, guid: cb3172fe5fa7fba49ac7ccfcb12b7bb1,
       type: 3}
     isOccupied: 0
+  selectedUnit: {fileID: 1367642493}
 --- !u!114 &1079986144
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -360,7 +361,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   navyCam: {fileID: 963194227}
   highlightMat: {fileID: 2100000, guid: 4a732e7f8d988b74eb53b80aacb99e6c, type: 2}
-  highlightOffset: 1
+  highlightOffset: 1.5
   highlightSpeed: 0.1
   highlightScale: 2
 --- !u!1 &1367642493
@@ -372,6 +373,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1367642494}
+  - component: {fileID: 1367642495}
   m_Layer: 0
   m_Name: Ship_Test
   m_TagString: Untagged
@@ -394,6 +396,20 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1367642495
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1367642493}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5a1e96fae1ffd7e4393edb073e659122, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  hexX: 0
+  hexY: 0
 --- !u!1 &1695590183
 GameObject:
   m_ObjectHideFlags: 0
