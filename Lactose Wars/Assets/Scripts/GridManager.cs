@@ -14,7 +14,6 @@ public class GridManager : MonoBehaviour
 
     public TileType[] tileTypes;
     int[,] tileCoord;
-    Node[,] graph;
 
     float xOffset = 0.866f;
     float zOffset = 0.75f;
@@ -58,12 +57,13 @@ public class GridManager : MonoBehaviour
             for (int y = 0; y < quadrantY; y++) { tileCoord[-x, y] = 0;}
         }
     }
-
-    //Custom data type to keep track of our graph nodes and their neighbors
+    
+    //Custom class to keep track of our graph nodes and their neighbors
+    //Here we are essentially creating a list of two dimensional arrays
     class Node
     {
         public List<Node> neighbors;
-
+        
         //Default constructor that initializes our list of nodes
         public Node()
         {
@@ -71,31 +71,80 @@ public class GridManager : MonoBehaviour
         }
     }
 
-    
+    //Here we define the type of array we will pass into our list above
+    Node[,] graph;
+
     void GeneratePathfindingGraph()
     {
+        //Here we need to specify the maximum number of possible "Node" arrays
         graph = new Node[quadrantX, quadrantY];
 
         //Initialize positive X nodes
         for (int x = 0; x < quadrantX; x++)
         {
             //Initialize positive Y nodes
-            for (int y = 0; y < quadrantY; y++) { AddNeighbors(x, y); }
+            for (int y = 0; y < quadrantY; y++)
+            {
+                //Here we need to actually create a node array that will contain the neighbors for each specific tile
+                graph[x, y] = new Node();
+
+                if (x > 0)
+                {
+                    graph[x, y].neighbors.Add(graph[x - 1, y]);
+
+                    if (y > 0)
+                    {
+                        if (Mathf.Abs(y) % 2 == 1) { graph[x, y].neighbors.Add(graph[x, y - 1]); }
+                        else { graph[x, y].neighbors.Add(graph[x - 1, y - 1]); }
+                    }
+                    if (y < quadrantY - 1)
+                    {
+                        if (Mathf.Abs(y) % 2 == 1) { graph[x, y].neighbors.Add(graph[x, y + 1]); }
+                        else { graph[x, y].neighbors.Add(graph[x - 1, y + 1]); }
+
+                    }
+                }
+                if (x < quadrantX - 1)
+                {
+                    graph[x, y].neighbors.Add(graph[x + 1, y]);
+
+                    if (y > 0)
+                    {
+                        if (Mathf.Abs(y) % 2 == 1) { graph[x, y].neighbors.Add(graph[x, y - 1]); }
+                        else { graph[x, y].neighbors.Add(graph[x + 1, y - 1]); }
+                    }
+                    if (y < quadrantY - 1)
+                    {
+                        if (Mathf.Abs(y) % 2 == 1) { graph[x, y].neighbors.Add(graph[x, y + 1]); }
+                        else { graph[x, y].neighbors.Add(graph[x + 1, y + 1]); }
+
+                    }
+                } 
+            }
             //Initialize negative Y nodes
-            for (int y = -1; y > -quadrantY; y--) { AddNeighbors(x, y); }
+            for (int y = -1; y > -quadrantY; y--)
+            {
+
+            }
         }
 
         //Initialize negative X nodes
         for (int x = -1; x > -quadrantX; x--)
         {
             //Initialize negative Y nodes
-            for (int y = -1; y > -quadrantY; y--) { AddNeighbors(x, y); }
+            for (int y = -1; y > -quadrantY; y--)
+            {
+
+            }
             //Initialize positive Y nodes
-            for (int y = 0; y < quadrantY; y++) { AddNeighbors(x, y); }
+            for (int y = 0; y < quadrantY; y++)
+            {
+
+            }
         }
     }
 
-
+    
     void AddNeighbors(int x, int y)
     {
         //As long as our x coordinate is greater than the minimum value of our negative x quadrant size:
@@ -147,7 +196,7 @@ public class GridManager : MonoBehaviour
         }
 
     }
-
+    
 
     //Generate map tiles according to their respective quadrants, coordinates, tile types, and prefabs
     //Increment the "quadNum" variable after generating each quadrant to prevent one quad from being generated more than once
