@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
-using System;
 
 //The following code has been adapted from "Quill18creates"'s tile movement video tutorials series found here:
 //https://www.youtube.com/watch?v=kYeTW2Zr8NA
@@ -17,12 +16,13 @@ public class GridManager : MonoBehaviour
 
     public TileType[] tileTypes;
     int[,] tileCoord;
+    Node[,] graph;
 
     float xOffset = 0.866f;
     float zOffset = 0.75f;
 
 
-    //TODO Much like we do with the hex tiles, when implementing more than one unit give each one a script and when clicked on, we tell this script what unit is now selected (quill's civ/dungeon tile video #3 10:35)
+//TODO Much like we do with the hex tiles, when implementing more than one unit give each one a script and when clicked on, we tell this script what unit is now selected (quill's civ/dungeon tile video #3 10:35)
     public GameObject selectedUnit;
 
     void Start()
@@ -32,7 +32,14 @@ public class GridManager : MonoBehaviour
         if (gridY % 2 == 0) { gridY++; }
 
         //Offset the grid manager according to the grid size and X & Z offsets
-        this.transform.position = new Vector3(this.transform.position.x - ((gridX / 2) * xOffset), this.transform.position.y, this.transform.position.y - ((gridY / 2) * zOffset));
+        transform.position = new Vector3(transform.position.x - ((gridX / 2) * xOffset), transform.position.y, transform.position.y - ((gridY / 2) * zOffset));
+
+//NOTE ONCE UNIT SPAWNING IS INTEGRATED THIS WILL NEED TO BE REFACTORED
+//YOU'LL LIKELY HAVE TO WRITE A FUNCTION FOR A UNIT TO CHECK WHAT TILE IT IS ON SO IT CAN RE-BIND ITSELF TO THE GRID WHEN THE STAGE GENERATES NEW TILES
+        //Setup the selected unit's variables
+        selectedUnit.GetComponent<UnitData>().hexX = gridX / 2;
+        selectedUnit.GetComponent<UnitData>().hexY = gridY / 2;
+        selectedUnit.GetComponent<UnitData>().grid = this;
 
         InitMapData();
         GeneratePathfindingGraph();
@@ -53,66 +60,90 @@ public class GridManager : MonoBehaviour
             for (int y = 0; y < gridY; y++) { tileCoord[x, y] = 0;}
         }
     }
-    
-    //Custom class to keep track of our graph nodes and their neighbors
-    //Here we are essentially creating a list of two dimensional arrays
-    class Node
+
+    /*
+    //Get the tile type from the specified tile and return its movement cost
+    float CostToEnter(int sourceX, int sourceY, int targetX, int targetY)
     {
-        public List<Node> neighbors;
-        
-        //Default constructor that initializes our list of nodes
-        public Node()
+        TileType tt = tileTypes[tileCoord[targetX, targetY]];
+
+        float cost = tt.moveCost;
+
+        if(sourceX != targetX && sourceY != targetY)
         {
-            neighbors = new List<Node>();
+            //We are now making a weird diagonal movement, tiime to fudge the cost of movement for tie breaking
+            cost += 100f;
         }
-    }
 
-    //Here we define the type of array we will pass into our list above
-    Node[,] graph;
+        return cost;
+    }*/
 
+
+//A POTENTIAL ISSUE WITH  THIS CODE IS THAT WE WILL BE GENERATING GRAPH DATA FOR OUR ENTIRE GRID EVEN THOUGH WE ARE ONLY SPAWNING/UTILIZING A SELECT PORTION OF OUR TILES
+//SO, UNIT PATHING THAT HAPPENS AT THE EDGE OF OUR USABLE TILES MAY CHOOSE TO PATH OUTSIDE OF THE GRID
     void GeneratePathfindingGraph()
     {
         //Here we need to specify the maximum number of possible "Node" arrays
         graph = new Node[gridX, gridY];
 
-        //Initialize positive X nodes
+        //Initialize a "Node" for each spot in the array
         for (int x = 0; x < gridX; x++)
         {
-            //Initialize positive Y nodes
             for (int y = 0; y < gridY; y++)
             {
                 //Here we need to actually create a node array that will contain the neighbors for each specific tile
                 graph[x, y] = new Node();
 
+                //We need each node to be self aware of their position
+                graph[x, y].x = x;
+                graph[x, y].y = y;
+            }
+        }
+
+        //Now that all the nodes exist, calculate their neighbors
+        for (int x = 0; x < gridX; x++)
+        {
+            for (int y = 0; y < gridY; y++)
+            {
+                //If the tile is not on the left edge of the grid
                 if (x > 0)
                 {
+                    //Add the tile to our left to its list of neighbors
                     graph[x, y].neighbors.Add(graph[x - 1, y]);
-
+                    //If the tile is not on the bottom edge of the grid
                     if (y > 0)
                     {
+                        //Add the tile to its bottom left to its list of neighbors (the x row that tile is in is shifted depending on wether or not we are on an even or odd row)
                         if (Mathf.Abs(y) % 2 == 1) { graph[x, y].neighbors.Add(graph[x, y - 1]); }
                         else { graph[x, y].neighbors.Add(graph[x - 1, y - 1]); }
                     }
+                    //If the tile is not on the top edge of the grid
                     if (y < gridY - 1)
                     {
+                        //Add the tile to its top left to its list of neighbors (the x row that tile is in is shifted depending on wether or not we are on an even or odd row)
                         if (Mathf.Abs(y) % 2 == 1) { graph[x, y].neighbors.Add(graph[x, y + 1]); }
                         else { graph[x, y].neighbors.Add(graph[x - 1, y + 1]); }
 
                     }
                 }
+                //If the tile is not on the right edge of the grid
                 if (x < gridX - 1)
                 {
+                    //Add the tile to our left to its list of neighbors
                     graph[x, y].neighbors.Add(graph[x + 1, y]);
-
+                    //If the tile is not on the bottom edge of the grid
                     if (y > 0)
                     {
-                        if (Mathf.Abs(y) % 2 == 1) { graph[x, y].neighbors.Add(graph[x, y - 1]); }
-                        else { graph[x, y].neighbors.Add(graph[x + 1, y - 1]); }
+                        //Add the tile to its bottom right to its list of neighbors (the x row that tile is in is shifted depending on wether or not we are on an even or odd row)
+                        if (Mathf.Abs(y) % 2 == 1) { graph[x, y].neighbors.Add(graph[x + 1, y - 1]); }
+                        else { graph[x, y].neighbors.Add(graph[x, y - 1]); }
                     }
+                    //If the tile is not on the top edge of the grid
                     if (y < gridY - 1)
                     {
-                        if (Mathf.Abs(y) % 2 == 1) { graph[x, y].neighbors.Add(graph[x, y + 1]); }
-                        else { graph[x, y].neighbors.Add(graph[x + 1, y + 1]); }
+                        //Add the tile to its top right to its list of neighbors (the x row that tile is in is shifted depending on wether or not we are on an even or odd row)
+                        if (Mathf.Abs(y) % 2 == 1) { graph[x, y].neighbors.Add(graph[x + 1, y + 1]); }
+                        else { graph[x, y].neighbors.Add(graph[x, y + 1]); }
 
                     }
                 } 
@@ -120,59 +151,6 @@ public class GridManager : MonoBehaviour
         }
     }
 
-    
-    void AddNeighbors(int x, int y)
-    {
-        //As long as our x coordinate is greater than the minimum value of our negative x quadrant size:
-        if (x > -gridX + 1)
-        {
-            //We can add a neighbor at our next x coordinate to our left
-            graph[x, y].neighbors.Add(graph[x - 1, y]);
-
-            //As long as our y coordinate is greater than the minimum value of our negative y quadrant size:
-            if (y > -gridY + 1)
-            {
-                //If we are on an odd row we can add a neighbor one y value below us on the current x coordinate (because the odd rows have their x values shifted and not the evens)
-                if (Mathf.Abs(y) % 2 == 1) { graph[x, y].neighbors.Add(graph[x, y - 1]); }
-                //Otherwise our neighbor beneath us is on the previous x column
-                else { graph[x, y].neighbors.Add(graph[x - 1, y - 1]); }
-            }
-            //As long as our y coordinate is less than the maximum value of our negative y quadrant size:
-            if (y < gridY - 1)
-            {
-                //If we are on an odd row we can add a neighbor one y value above us on the current x coordinate
-                if (Mathf.Abs(y) % 2 == 1) { graph[x, y].neighbors.Add(graph[x, y + 1]); }
-                //Otherwise our neighbor above us is on the previous x column
-                else { graph[x, y].neighbors.Add(graph[x - 1, y + 1]); }
-                
-            }
-        }
-        //As long as our x coordinate is less than the minimum value of our negative x quadrant size:
-        if (x < gridX - 1)
-        {
-            //We can add a neighbor at our next x coordinate to our right
-            graph[x, y].neighbors.Add(graph[x + 1, y]);
-
-            //As long as our y coordinate is greater than the minimum value of our negative y quadrant size:
-            if (y > -gridY + 1)
-            {
-                //If we are on an odd row we can add a neighbor one y value below us on the current x coordinate
-                if (Mathf.Abs(y) % 2 == 1) { graph[x, y].neighbors.Add(graph[x, y - 1]); }
-                //Otherwise our neighbor beneath us is on the next x column
-                else { graph[x, y].neighbors.Add(graph[x + 1, y - 1]); }
-            }
-            //As long as our y coordinate is less than the maximum value of our negative y quadrant size:
-            if (y < gridY - 1)
-            {
-                //If we are on an odd row we can add a neighbor one y value above us on the current x coordinate
-                if (Mathf.Abs(y) % 2 == 1) { graph[x, y].neighbors.Add(graph[x, y + 1]); }
-                //Otherwise our neighbor above us is on the previous x column
-                else { graph[x, y].neighbors.Add(graph[x + 1, y + 1]); }
-            }
-        }
-
-    }
-    
 
     //Generate map tiles according to their respective quadrants, coordinates, tile types, and prefabs
     //Increment the "quadNum" variable after generating each quadrant to prevent one quad from being generated more than once
@@ -224,26 +202,102 @@ public class GridManager : MonoBehaviour
         }
     }
 
-    public void MoveSelectedUnit(int x, int y)
+    public void GeneratePathTo(int x, int y)
     {
-        selectedUnit.GetComponent<UnitData>().hexX = x;
-        selectedUnit.GetComponent<UnitData>().hexY = y;
-        selectedUnit.transform.position = ConvertTileCoordToWorldCoord(x, y);
+        //Clear out any old paths
+        selectedUnit.GetComponent<UnitData>().currentPath = null;
+        //Implementation of Dijkstra's pathfinding algorithm as outlined by Quill18Creates in the video series linked above, specifically episode #5 https://www.youtube.com/watch?v=QhaKb5N3Hj8&list=PLAP0hCiCP_809w1sEFHazOBwrc0DIdx43&index=69&t=133s
+        //Create a set of dictionaries to keep track of the distance from point A to point B and which nodes are involved
+        Dictionary<Node, float> dist = new Dictionary<Node, float>();
+        Dictionary<Node, Node> prev = new Dictionary<Node, Node>();
+        //Create a list of nodes we have not checked yet
+        List<Node> unvisited = new List<Node>();
+        //Define where we are coming from and where we want to go
+        Node source = graph[selectedUnit.GetComponent<UnitData>().hexX, selectedUnit.GetComponent<UnitData>().hexY];
+        Node target = graph[x, y];
+        //Initialize our source node to be a distance of 0 as it is the starting point, and set the previous nodes to null as we are originating from here 
+        dist[source] = 0;
+        prev[source] = null;
+        //Initialize everything but our source to have a distance of infinity since we dont know any better at the moment
+        foreach (Node v in graph)
+        {
+            if(v != source)
+            {
+                dist[v] = Mathf.Infinity;
+                prev[v] = null;
+            }
+            unvisited.Add(v);
+        }
+        //While we have nodes that are unchecked
+        while(unvisited.Count > 0)
+        {
+            //"u" is our unvisited node with the smallest distance to our source
+            //If we have not found a "u" in our unvisited nodes grab the first one
+            //Otherwise if the distance of our "u" is less than the distance of our previous "u", set "u" to the node on the shorter path
+            Node u = null;
+            foreach(Node possibleU in unvisited)
+            {
+                if(u == null || dist[possibleU] < dist[u])
+                {
+                    u = possibleU;
+                }
+            }
+            //If the node we grab happens to be our target node, break out of the while loop because we have our path
+            if(u == target) { break; }
+            unvisited.Remove(u);
+
+            foreach(Node v in u.neighbors)
+            {
+                //Calculate the distance between our starting node and our target node using our custom class data
+                float alt = dist[u] + u.DistanceTo(v);
+                //Instead of simply using a distance calculation to decide which tile to move to, instead use the tile's movement cost to move from the source tile to the target tile
+                    //float alt = dist[u] + CostToEnter(u.x, u.y, v.x, v.y);
+                //If the distance between the current node and the target is shorter than the distance between any previously calculated node
+                if (alt < dist[v])
+                {
+                    //Set this as the new distance
+                    dist[v] = alt;
+                    //Override the path with the shorter distance node
+                    prev[v] = u;
+                }
+            }
+        }
+
+        //If we get here we have either found the shortest route to our target, or there is not route from our target that can backtrack to our source
+        if (prev[target] == null)
+        {
+            //There is no route between our target and source
+            return;
+        }
+
+        List<Node> currentPath = new List<Node>();
+        Node currentNode = target;
+
+        //Step through the "prev" chain and add it to our path
+        while (currentNode != null)
+        {
+            currentPath.Add(currentNode);
+            currentNode = prev[currentNode];
+        }
+
+        //This path currently describes a route from our target to our source, so we need to invert it
+        currentPath.Reverse();
+        //Give our unit its calculated path
+        selectedUnit.GetComponent<UnitData>().currentPath = currentPath;
     }
+
 
     public Vector3 ConvertTileCoordToWorldCoord(int x, int y)
     {
-
-
-
-
-        //TODO: Implement some code here that uses math to convert a tile's coordinates to into a world coordinate and then pass that through the "return new" below
-
-
-
-
-
-        //Our Z position is 0 on account of our rotational issue associated with importing assets from Blender
-        return new Vector3(x, 0, y);
+        //If we are in an odd row apply not only our standard x and "y" offests but an additional half of our x offset to accomodate for the shifted row
+        if (Mathf.Abs(y) % 2 == 1)
+        {
+            return new Vector3((transform.position.x + x * xOffset) + (xOffset / 2f), transform.position.y, transform.position.z + y * zOffset);
+        }
+        //If we are in an even row, just apply the standard x and "y" offsets
+        else
+        {
+            return new Vector3(transform.position.x + x * xOffset, transform.position.y, transform.position.z + y * zOffset);
+        }
     }
 }

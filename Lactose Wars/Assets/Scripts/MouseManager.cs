@@ -112,7 +112,7 @@ public class MouseManager : MonoBehaviour
             //Extract the X and Y coordinates from the clicked hex and call the "MoveSelectedUnit" function on our GridManager using its coordinates
             int x = hitTile.GetComponentInChildren<HexData>().hexX;
             int y = hitTile.GetComponentInChildren<HexData>().hexY;
-            hitTile.root.GetComponent<GridManager>().MoveSelectedUnit(x, y);
+            hitTile.root.GetComponent<GridManager>().GeneratePathTo(x, y);
         }
     }
 }

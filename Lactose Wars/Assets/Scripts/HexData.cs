@@ -6,4 +6,6 @@ public class HexData : MonoBehaviour
 {
     public int hexX;
     public int hexY;
+
+    public bool isOccupied;
 }

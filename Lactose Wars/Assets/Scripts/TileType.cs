@@ -6,5 +6,6 @@ using UnityEngine;
 public class TileType
 {
     public GameObject hexTilePrefab;
-    public bool isOccupied;
+
+    //public float moveCost = 1;
 }
