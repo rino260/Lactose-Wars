@@ -310,7 +310,7 @@ GameObject:
   m_Layer: 0
   m_Name: Hex Grid
   m_TagString: Untagged
-  m_Icon: {fileID: 0}
+  m_Icon: {fileID: 6519382022992737161, guid: 0000000000000000d000000000000000, type: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
@@ -340,8 +340,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3811fe5c8dd8aa245831c4e7b38265c1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  quadrantX: 20
-  quadrantY: 20
+  gridX: 40
+  gridY: 40
   tileTypes:
   - hexTilePrefab: {fileID: 6886942572562293357, guid: cb3172fe5fa7fba49ac7ccfcb12b7bb1,
       type: 3}
