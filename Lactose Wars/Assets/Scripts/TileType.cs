@@ -5,7 +5,5 @@ using UnityEngine;
 [System.Serializable]
 public class TileType
 {
-    public GameObject hexTilePrefab;
-
-    //public float moveCost = 1;
+    public bool isOccupied;
 }

@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class MouseManager : MonoBehaviour
 {
@@ -27,6 +28,9 @@ public class MouseManager : MonoBehaviour
 
     void Update()
     {
+        //Check to see if we are hovering over a gameobject that is a part of our event system and if so return out of our update method so we cannot click on gameobjects behind it
+        if (EventSystem.current.IsPointerOverGameObject()) { return; }
+
         CheckMouseCollision();
         CheckMouseClick();
     }
@@ -109,10 +113,17 @@ public class MouseManager : MonoBehaviour
         //If we click the left mouse button and we are highlighting a tile:
         if(Input.GetMouseButtonDown(0) && hitTile != null)
         {
-            //Extract the X and Y coordinates from the clicked hex and call the "MoveSelectedUnit" function on our GridManager using its coordinates
-            int x = hitTile.GetComponentInChildren<HexData>().hexX;
-            int y = hitTile.GetComponentInChildren<HexData>().hexY;
+            //Extract the X and Y coordinates from the clicked hex and call the "GeneratePathTo" function on our GridManager using its coordinates
+            int x = hitTile.GetComponentInChildren<HexData>().xCoord;
+            int y = hitTile.GetComponentInChildren<HexData>().yCoord;
             hitTile.root.GetComponent<GridManager>().GeneratePathTo(x, y);
+        }
+//TEMPORARY TEST TO SEE IF WE CAN CONTROL A TILE'S WALKABILITY
+        if (Input.GetMouseButtonDown(1) && hitTile != null)
+        {
+            int x = hitTile.GetComponentInChildren<HexData>().xCoord;
+            int y = hitTile.GetComponentInChildren<HexData>().yCoord;
+            hitTile.root.GetComponent<GridManager>().ToggleHex(x, y);
         }
     }
 }

@@ -3,16 +3,15 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 
-//The following code has been adapted from "Quill18creates"'s tile movement video tutorials series found here:
-//https://www.youtube.com/watch?v=kYeTW2Zr8NA
-//and here https://www.youtube.com/watch?v=td3O1tkbqYQ
+//The following code has been adapted from "Quill18creates" tile movement video tutorials series found here:
+//https://www.youtube.com/watch?v=kYeTW2Zr8NA and here https://www.youtube.com/watch?v=td3O1tkbqYQ
 
 public class GridManager : MonoBehaviour
 {
     [Range(0,100)]
-    public int gridX;
+    public int gridSizeX;
     [Range(0, 100)]
-    public int gridY;
+    public int gridSizeY;
 
     public TileType[] tileTypes;
     int[,] tileCoord;
@@ -21,24 +20,18 @@ public class GridManager : MonoBehaviour
     float xOffset = 0.866f;
     float zOffset = 0.75f;
 
-
+    public GameObject hexTilePrefab;
 //TODO Much like we do with the hex tiles, when implementing more than one unit give each one a script and when clicked on, we tell this script what unit is now selected (quill's civ/dungeon tile video #3 10:35)
     public GameObject selectedUnit;
 
+
     void Start()
     {
-        //Ensure that our grid will have an odd length and width so we will have a center tile on the grid
-        if (gridX % 2 == 0) { gridX++; }
-        if (gridY % 2 == 0) { gridY++; }
-
-        //Offset the grid manager according to the grid size and X & Z offsets
-        transform.position = new Vector3(transform.position.x - ((gridX / 2) * xOffset), transform.position.y, transform.position.y - ((gridY / 2) * zOffset));
-
 //NOTE ONCE UNIT SPAWNING IS INTEGRATED THIS WILL NEED TO BE REFACTORED
 //YOU'LL LIKELY HAVE TO WRITE A FUNCTION FOR A UNIT TO CHECK WHAT TILE IT IS ON SO IT CAN RE-BIND ITSELF TO THE GRID WHEN THE STAGE GENERATES NEW TILES
         //Setup the selected unit's variables
-        selectedUnit.GetComponent<UnitData>().hexX = gridX / 2;
-        selectedUnit.GetComponent<UnitData>().hexY = gridY / 2;
+        selectedUnit.GetComponent<UnitData>().hexX = gridSizeX / 2;
+        selectedUnit.GetComponent<UnitData>().hexY = gridSizeY / 2;
         selectedUnit.GetComponent<UnitData>().grid = this;
 
         InitMapData();
@@ -47,49 +40,33 @@ public class GridManager : MonoBehaviour
     }
 
 
-    //Populate an array of coordinates with which to assign to map tiles according to a specified quadrant size and tile type
-    //Set every tile to the desired type of tile in the "tiletype" array
     void InitMapData()
     {
-        tileCoord = new int[gridX, gridY];
-
-        //Initialize X tiles
-        for (int x = 0; x < gridX; x++)
+        //Ensure that our grid will have an odd length and width so we will have a center tile on the grid
+        if (gridSizeX % 2 == 0) { gridSizeX++; }
+        if (gridSizeY % 2 == 0) { gridSizeY++; }
+        //Offset the grid manager according to the grid size and X & Z offsets
+        transform.position = new Vector3(transform.position.x - ((gridSizeX / 2) * xOffset), transform.position.y, transform.position.y - ((gridSizeY / 2) * zOffset));
+        //Populate an array of coordinates with which to assign to map tiles according to a specified grid size
+        tileCoord = new int[gridSizeX, gridSizeY];
+        //Assign each tile to be walkable
+        for (int x = 0; x < gridSizeX; x++)
         {
-            //Initialize Y tiles
-            for (int y = 0; y < gridY; y++) { tileCoord[x, y] = 0;}
+            for (int y = 0; y < gridSizeY; y++)
+            { tileCoord[x, y] = 0; }
         }
     }
 
-    /*
-    //Get the tile type from the specified tile and return its movement cost
-    float CostToEnter(int sourceX, int sourceY, int targetX, int targetY)
-    {
-        TileType tt = tileTypes[tileCoord[targetX, targetY]];
 
-        float cost = tt.moveCost;
-
-        if(sourceX != targetX && sourceY != targetY)
-        {
-            //We are now making a weird diagonal movement, tiime to fudge the cost of movement for tie breaking
-            cost += 100f;
-        }
-
-        return cost;
-    }*/
-
-
-//A POTENTIAL ISSUE WITH  THIS CODE IS THAT WE WILL BE GENERATING GRAPH DATA FOR OUR ENTIRE GRID EVEN THOUGH WE ARE ONLY SPAWNING/UTILIZING A SELECT PORTION OF OUR TILES
-//SO, UNIT PATHING THAT HAPPENS AT THE EDGE OF OUR USABLE TILES MAY CHOOSE TO PATH OUTSIDE OF THE GRID
     void GeneratePathfindingGraph()
     {
         //Here we need to specify the maximum number of possible "Node" arrays
-        graph = new Node[gridX, gridY];
+        graph = new Node[gridSizeX, gridSizeY];
 
         //Initialize a "Node" for each spot in the array
-        for (int x = 0; x < gridX; x++)
+        for (int x = 0; x < gridSizeX; x++)
         {
-            for (int y = 0; y < gridY; y++)
+            for (int y = 0; y < gridSizeY; y++)
             {
                 //Here we need to actually create a node array that will contain the neighbors for each specific tile
                 graph[x, y] = new Node();
@@ -101,9 +78,9 @@ public class GridManager : MonoBehaviour
         }
 
         //Now that all the nodes exist, calculate their neighbors
-        for (int x = 0; x < gridX; x++)
+        for (int x = 0; x < gridSizeX; x++)
         {
-            for (int y = 0; y < gridY; y++)
+            for (int y = 0; y < gridSizeY; y++)
             {
                 //If the tile is not on the left edge of the grid
                 if (x > 0)
@@ -118,7 +95,7 @@ public class GridManager : MonoBehaviour
                         else { graph[x, y].neighbors.Add(graph[x - 1, y - 1]); }
                     }
                     //If the tile is not on the top edge of the grid
-                    if (y < gridY - 1)
+                    if (y < gridSizeY - 1)
                     {
                         //Add the tile to its top left to its list of neighbors (the x row that tile is in is shifted depending on wether or not we are on an even or odd row)
                         if (Mathf.Abs(y) % 2 == 1) { graph[x, y].neighbors.Add(graph[x, y + 1]); }
@@ -127,7 +104,7 @@ public class GridManager : MonoBehaviour
                     }
                 }
                 //If the tile is not on the right edge of the grid
-                if (x < gridX - 1)
+                if (x < gridSizeX - 1)
                 {
                     //Add the tile to our left to its list of neighbors
                     graph[x, y].neighbors.Add(graph[x + 1, y]);
@@ -139,7 +116,7 @@ public class GridManager : MonoBehaviour
                         else { graph[x, y].neighbors.Add(graph[x, y - 1]); }
                     }
                     //If the tile is not on the top edge of the grid
-                    if (y < gridY - 1)
+                    if (y < gridSizeY - 1)
                     {
                         //Add the tile to its top right to its list of neighbors (the x row that tile is in is shifted depending on wether or not we are on an even or odd row)
                         if (Mathf.Abs(y) % 2 == 1) { graph[x, y].neighbors.Add(graph[x + 1, y + 1]); }
@@ -153,14 +130,13 @@ public class GridManager : MonoBehaviour
 
 
     //Generate map tiles according to their respective quadrants, coordinates, tile types, and prefabs
-    //Increment the "quadNum" variable after generating each quadrant to prevent one quad from being generated more than once
     void GenerateMapTiles()
     {
-        for (int x = 0; x < gridX; x++)
+        for (int x = 0; x < gridSizeX; x++)
         {
-            for (int y = 0; y < gridY; y++)
+            for (int y = 0; y < gridSizeY; y++)
             {
-                SpawnTiles(x, y, 0, tileTypes[tileCoord[x, y]].hexTilePrefab);
+                SpawnTiles(x, y, 0, hexTilePrefab);
             }
         }
     }
@@ -187,25 +163,56 @@ public class GridManager : MonoBehaviour
             GameObject go = Instantiate(tileCoord, new Vector3(transform.position.x + xPos, 0, transform.position.z + y * zOffset), Quaternion.identity);
             //We know each hex will have a script on it containing empty X and Y integers so when we instantiate a hex object, pass its X and Y data to each hex
             HexData data = go.GetComponent<HexData>();
-            data.hexX = x;
-            data.hexY = y;
+            data.xCoord = x;
+            data.yCoord = y;
             //Give each hex a name according to their grid coordinates and make them children of the grid master object for a cleaner heirarchy
             go.name = "Hex (" + x + "," + y + ")";
             go.transform.SetParent(transform);
 
-            //After spawning a valid tile, check if it is touching the map boundaries, if so, delete it
+            //After spawning a valid tile, check if it is touching the map boundaries, if so, set it to occupied and then delete it
             Collider[] hitColliders = Physics.OverlapSphere(go.transform.position, 0.5f, layerMask);
             if (hitColliders.Length > 0)
             {
+                ToggleHex(data.xCoord, data.yCoord);
                 Destroy(go.gameObject);
             }
         }
+    }
+
+
+    //Toggle a specified node's tile type between occupied or not occupied
+    public void ToggleHex (int targetX, int targetY)
+    {
+        if (tileCoord[targetX, targetY] == 0) { tileCoord[targetX, targetY] = 1; }
+        else { tileCoord[targetX, targetY] = 0; }
+    }
+
+
+    //Check the occupied status of the target tile and adjust the cost to move into that tile
+    public float CostToEnter(int targetX, int targetY)
+    {
+        TileType tt = tileTypes[tileCoord[targetX, targetY]];
+        //By default our movement cost is 1
+        float cost = 1;
+        //But if the tile is occupied our movement cost will be infinate and the unit will not be able to move there
+        if(CanEnterTile(targetX, targetY) == false) { return Mathf.Infinity; }
+        return cost;
+    }
+
+
+    //Check a specified tile's occupied status and give our "GeneratePathT0" method the go ahead or not
+    public bool CanEnterTile(int x, int y)
+    {
+        if(tileCoord[x, y] == 0) { return true; }
+        else { return false; }
     }
 
     public void GeneratePathTo(int x, int y)
     {
         //Clear out any old paths
         selectedUnit.GetComponent<UnitData>().currentPath = null;
+        //If we click on an occipied tile cancel the pathfinding
+        if (!CanEnterTile(x, y)) { return;  }
         //Implementation of Dijkstra's pathfinding algorithm as outlined by Quill18Creates in the video series linked above, specifically episode #5 https://www.youtube.com/watch?v=QhaKb5N3Hj8&list=PLAP0hCiCP_809w1sEFHazOBwrc0DIdx43&index=69&t=133s
         //Create a set of dictionaries to keep track of the distance from point A to point B and which nodes are involved
         Dictionary<Node, float> dist = new Dictionary<Node, float>();
@@ -248,10 +255,10 @@ public class GridManager : MonoBehaviour
 
             foreach(Node v in u.neighbors)
             {
-                //Calculate the distance between our starting node and our target node using our custom class data
-                float alt = dist[u] + u.DistanceTo(v);
+                    //Calculate the distance between our starting node and our target node using our custom class data
+                    //float alt = dist[u] + u.DistanceTo(v);
                 //Instead of simply using a distance calculation to decide which tile to move to, instead use the tile's movement cost to move from the source tile to the target tile
-                    //float alt = dist[u] + CostToEnter(u.x, u.y, v.x, v.y);
+                    float alt = dist[u] + CostToEnter(v.x, v.y);
                 //If the distance between the current node and the target is shorter than the distance between any previously calculated node
                 if (alt < dist[v])
                 {

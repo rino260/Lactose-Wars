@@ -4,8 +4,8 @@ using UnityEngine;
 
 public class HexData : MonoBehaviour
 {
-    public int hexX;
-    public int hexY;
+    public int xCoord;
+    public int yCoord;
 
     public bool isOccupied;
 }
