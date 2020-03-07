@@ -2,10 +2,19 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 public class MouseManager : MonoBehaviour
 {
     public Camera navyCam;
+
+    //References for initial unit spawning
+    public GridManager gridManager;
+    public Button nextTurnButton;
+    public List<GameObject> ships;
+    //Since we will be using this to check 
+    int shipCounter;
+    bool placing;
 
     //Inspector variables to allow customizing highlight behavior
     public Material highlightMat;
@@ -18,12 +27,28 @@ public class MouseManager : MonoBehaviour
 
     //Internal references from which to calculate highlight information
     string tileTag = "Tile";
+    string shipTag = "Ship";
     Transform hitTile; //Create a reference for the hit tile gameobject
+    Transform hitShip; //Create a reference for the hit ship gameobject
     Vector3 defaultPos; //Create a reference to the hit tile's default position
     Vector3 targetPos; //Create a dynamic/temporary reference to the position we want to lerp the hit tile to
     Vector3 defaultScale; //Create a reference to the hit tile's default scale
     Material defaultMat; //Create a reference to the hit tile's default material
 
+    //Internal reference for clicked tiles 
+    int hitTileX;
+    int hitTileY;
+
+
+    public void SpawnUnit()
+    {
+        //If we have not placed all of our ships
+        if (shipCounter < ships.Count)
+        {
+            gridManager.selectedUnit = null;
+            placing = true;
+        }
+    }
 
 
     void Update()
@@ -47,7 +72,7 @@ public class MouseManager : MonoBehaviour
             //If we hit a tile:
             if (hitInfo.collider.tag == tileTag)
             {
-                //If the tile we hithas not been defined:
+                //If the tile we hit has not been defined:
                 if (hitTile == null)
                 {
                     //Define what tile we hit
@@ -73,12 +98,21 @@ public class MouseManager : MonoBehaviour
                 ResetHighlight();
                 hitTile = null;
             }
+            //If we hit a ship, define a reference to its root, otherwise clear any stored info
+//INCORPORATE HIGHLIGHT FUNCTIONALITY FOR SELECTED SHIPS
+            if(hitInfo.collider.tag == shipTag) { hitShip = hitInfo.collider.transform.root; }
+            else if (hitInfo.collider.tag != shipTag) { hitShip = null; }
         }
     }
 
 
     void Highlight()
     {
+        //Extract the X and Y coordinates from the hit tile
+        hitTileX = hitTile.GetComponentInChildren<HexData>().xCoord;
+        hitTileY = hitTile.GetComponentInChildren<HexData>().yCoord;
+
+//TEMPORARY USER FEEDBACK, REPLACE WITH A VFX EFFECT OR TEMPORARY HEX TILE SO WE STOP GETTING THE TWITCHING ISSUE
         //Cache the hit tile's default material and default world position
         defaultMat = hitTile.GetComponentInChildren<MeshRenderer>().material;
         defaultPos = hitTile.position;
@@ -110,20 +144,41 @@ public class MouseManager : MonoBehaviour
 
     void CheckMouseClick()
     {
-        //If we click the left mouse button and we are highlighting a tile:
-        if(Input.GetMouseButtonDown(0) && hitTile != null)
+        //If we click the left mouse button, are selecting a tile, and have placed all of our units:
+        if (Input.GetMouseButtonDown(0) && hitTile != null && !placing)
         {
-            //Extract the X and Y coordinates from the clicked hex and call the "GeneratePathTo" function on our GridManager using its coordinates
-            int x = hitTile.GetComponentInChildren<HexData>().xCoord;
-            int y = hitTile.GetComponentInChildren<HexData>().yCoord;
-            hitTile.root.GetComponent<GridManager>().GeneratePathTo(x, y);
+            //Use the X and Y coordinates from the clicked hex and call the "GeneratePathTo" function on our GridManager using its coordinates
+            hitTile.root.GetComponent<GridManager>().GeneratePathTo(hitTileX, hitTileY);
         }
+
+        //If we click the left mouse button, are selecting a ship, and have placed all of our units:
+        if (Input.GetMouseButtonDown(0) && hitShip != null && !placing)
+        {
+            gridManager.selectedUnit = hitShip.gameObject;
+        }
+
+        //If we have not placed all of our units
+        if (Input.GetMouseButtonDown(0) && hitTile != null && placing)
+        {
+            //Intantiate the current ship in the list at our converted coordinates
+            GameObject go = Instantiate(ships[shipCounter], gridManager.ConvertTileCoordToWorldCoord(hitTileX, hitTileY), Quaternion.identity);
+            //Set the ship's x and y tile position
+            go.GetComponent<UnitData>().hexX = hitTileX;
+            go.GetComponent<UnitData>().hexY = hitTileY;
+            go.GetComponent<UnitData>().grid = gridManager;
+            //Add the "InitializeMovement" method from each spawned ship to our next turn button
+            nextTurnButton.GetComponent<Button>().onClick.AddListener(() => go.GetComponent<UnitData>().InitializeMovement());
+            //Set our spawned ship to be the selected unit for the time being
+            gridManager.selectedUnit = go;
+            //If we have not placed all of our ships increment our counter, otherwise take us out of the placement phase
+            shipCounter++;
+            if (shipCounter == ships.Count) { placing = false; }
+        }
+
 //TEMPORARY TEST TO SEE IF WE CAN CONTROL A TILE'S WALKABILITY
         if (Input.GetMouseButtonDown(1) && hitTile != null)
         {
-            int x = hitTile.GetComponentInChildren<HexData>().xCoord;
-            int y = hitTile.GetComponentInChildren<HexData>().yCoord;
-            hitTile.root.GetComponent<GridManager>().ToggleHex(x, y);
+            hitTile.root.GetComponent<GridManager>().ToggleHex(hitTileX, hitTileY);
         }
     }
 }

@@ -2,6 +2,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+
+//The following code has been adapted from "Quill18creates" tile movement video tutorials series found here:
+//https://www.youtube.com/watch?v=kYeTW2Zr8NA and here https://www.youtube.com/watch?v=td3O1tkbqYQ
+
 //Custom class to keep track of our graph nodes and their neighbors
 //Here we are essentially creating a list of two dimensional arrays
 public class Node

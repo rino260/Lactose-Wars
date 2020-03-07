@@ -21,19 +21,11 @@ public class GridManager : MonoBehaviour
     float zOffset = 0.75f;
 
     public GameObject hexTilePrefab;
-//TODO Much like we do with the hex tiles, when implementing more than one unit give each one a script and when clicked on, we tell this script what unit is now selected (quill's civ/dungeon tile video #3 10:35)
     public GameObject selectedUnit;
 
 
     void Start()
     {
-//NOTE ONCE UNIT SPAWNING IS INTEGRATED THIS WILL NEED TO BE REFACTORED
-//YOU'LL LIKELY HAVE TO WRITE A FUNCTION FOR A UNIT TO CHECK WHAT TILE IT IS ON SO IT CAN RE-BIND ITSELF TO THE GRID WHEN THE STAGE GENERATES NEW TILES
-        //Setup the selected unit's variables
-        selectedUnit.GetComponent<UnitData>().hexX = gridSizeX / 2;
-        selectedUnit.GetComponent<UnitData>().hexY = gridSizeY / 2;
-        selectedUnit.GetComponent<UnitData>().grid = this;
-
         InitMapData();
         GeneratePathfindingGraph();
         GenerateMapTiles();
