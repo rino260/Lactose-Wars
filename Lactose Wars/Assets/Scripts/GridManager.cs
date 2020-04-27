@@ -192,7 +192,7 @@ public class GridManager : MonoBehaviour
     }
 
 
-    //Check a specified tile's occupied status and give our "GeneratePathT0" method the go ahead or not
+    //Check a specified tile's occupied status and give our "GeneratePathTo" method the go ahead or not
     public bool CanEnterTile(int x, int y)
     {
         if(tileCoord[x, y] == 0) { return true; }
@@ -205,7 +205,8 @@ public class GridManager : MonoBehaviour
         selectedUnit.GetComponent<UnitData>().currentPath = null;
         //If we click on an occipied tile cancel the pathfinding
         if (!CanEnterTile(x, y)) { return;  }
-        //Implementation of Dijkstra's pathfinding algorithm as outlined by Quill18Creates in the video series linked above, specifically episode #5 https://www.youtube.com/watch?v=QhaKb5N3Hj8&list=PLAP0hCiCP_809w1sEFHazOBwrc0DIdx43&index=69&t=133s
+        //Implementation of Dijkstra's pathfinding algorithm as outlined by Quill18Creates in the video series linked above 
+            //specifically episode #5 https://www.youtube.com/watch?v=QhaKb5N3Hj8&list=PLAP0hCiCP_809w1sEFHazOBwrc0DIdx43&index=69&t=133s
         //Create a set of dictionaries to keep track of the distance from point A to point B and which nodes are involved
         Dictionary<Node, float> dist = new Dictionary<Node, float>();
         Dictionary<Node, Node> prev = new Dictionary<Node, Node>();

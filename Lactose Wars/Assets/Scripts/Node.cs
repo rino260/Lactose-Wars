@@ -23,7 +23,7 @@ public class Node
     public float DistanceTo(Node n)
     {
         //We utilize our currents nodes current x and y grid position as well as the x and y of our target node to calculate the distance between the two points
-        //NOTE: this will return the euclidian value between the two points which will cause it to prefer straighter lines, as diagonal movements will be SLIGHTLY farther away
+        //NOTE: this will return the euclidean value between the two points which will cause it to prefer straighter lines, as diagonal movements will be SLIGHTLY farther away
         return Vector2.Distance(new Vector2(x, y), new Vector2(n.x, n.y));
     }
 }
