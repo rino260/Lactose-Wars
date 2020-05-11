@@ -176,9 +176,9 @@ public class MouseManager : MonoBehaviour
         }
 
 //TEMPORARY TEST TO SEE IF WE CAN CONTROL A TILE'S WALKABILITY
-        if (Input.GetMouseButtonDown(1) && hitTile != null)
+        /*if (Input.GetMouseButtonDown(1) && hitTile != null)
         {
             hitTile.root.GetComponent<GridManager>().ToggleHex(hitTileX, hitTileY);
-        }
+        }*/
     }
 }

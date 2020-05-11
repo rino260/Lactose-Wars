@@ -12,9 +12,12 @@ public class UnitData : MonoBehaviour
     public int hexY;
     public GridManager grid;
     public int movespeed;
-    [Range(0,20)]
+    [Range(0, 20)]
     public int animationSpeed;
     public int turningAnimationMultiplier;
+    string tileTag = "Tile";
+    public List<Transform> pieceSegments;
+
 
     int remainingMovement;
     bool shouldMove;
@@ -27,6 +30,7 @@ public class UnitData : MonoBehaviour
     {
         //Initialize our desitination to be set later
         destination = transform.position;
+        ToggleOccupiedHexes(1);
     }
 
 
@@ -62,8 +66,10 @@ public class UnitData : MonoBehaviour
 
     public void InitializeMovement()
     {
-        //Establish our unit's total amount of movement and begin movement
+        //Each time the "next turn" button is pressed it initializes the next "step" of gameplay
+        //Establish our unit's total amount of movement, set the tiles beneath the ship to walkable, and begin moving
         remainingMovement = movespeed;
+        ToggleOccupiedHexes(0);
         StepForward();
     }
 
@@ -72,8 +78,12 @@ public class UnitData : MonoBehaviour
     {
         if (remainingMovement > 0)
         {
-            //Make sure we actually have a valid path, if not, return out of the function
-            if (currentPath == null) { return; }
+            //Make sure we actually have a valid path, if not return out of the function and toggle the tiles beneath the ship to occupied
+            if (currentPath == null)
+            {
+                ToggleOccupiedHexes(1);
+                return;
+            }
             //Update our unit's current tile position data
             hexX = currentPath[1].x;
             hexY = currentPath[1].y;
@@ -82,7 +92,7 @@ public class UnitData : MonoBehaviour
             shouldMove = true;
         }
     }
-     
+
 
     void AnimateMovement()
     {
@@ -119,11 +129,32 @@ public class UnitData : MonoBehaviour
     {
         //Remove the previous tile from the list
         currentPath.RemoveAt(0);
-        //If the tile we just moved to is the only tile left in the list, we have reached our target so clear our list
-        if (currentPath.Count == 1) { currentPath = null; }
+        //If the tile we just moved to is the only tile left in the list, we have reached our target so clear our list and toggle the hexes under us to occupied
+        if (currentPath.Count == 1)
+        {
+            ToggleOccupiedHexes(1);
+            currentPath = null;
+        }
         //We then need to decrement our movement cost
         remainingMovement--;
         //Continue moving if applicaple
         StepForward();
+    }
+
+
+    void ToggleOccupiedHexes(int status)
+    {
+        for (int i = 0; i < pieceSegments.Count; i++)
+        {
+            RaycastHit hit;
+            //Send a raycast downward from each segment in our game piece and toggle all tiles below it 
+            if (Physics.Raycast(pieceSegments[i].position, Vector3.down, out hit, Mathf.Infinity) && hit.transform.tag == tileTag)
+            {
+                int hitX = hit.transform.parent.gameObject.GetComponent<HexData>().xCoord;
+                int hitY = hit.transform.parent.gameObject.GetComponent<HexData>().yCoord;
+
+                grid.ToggleHex(hitX, hitY, status);
+            }
+        }
     }
 }

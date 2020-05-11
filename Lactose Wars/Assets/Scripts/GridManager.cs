@@ -165,7 +165,7 @@ public class GridManager : MonoBehaviour
             Collider[] hitColliders = Physics.OverlapSphere(go.transform.position, 0.5f, layerMask);
             if (hitColliders.Length > 0)
             {
-                ToggleHex(data.xCoord, data.yCoord);
+                ToggleHex(data.xCoord, data.yCoord, 1);
                 Destroy(go.gameObject);
             }
         }
@@ -173,10 +173,14 @@ public class GridManager : MonoBehaviour
 
 
     //Toggle a specified node's tile type between occupied or not occupied
-    public void ToggleHex (int targetX, int targetY)
+    //An occupied tile will have a status of 1
+    //An un-occupied tile will have a status of 0
+    public void ToggleHex (int targetX, int targetY, int status)
     {
-        if (tileCoord[targetX, targetY] == 0) { tileCoord[targetX, targetY] = 1; }
-        else { tileCoord[targetX, targetY] = 0; }
+        //if (tileCoord[targetX, targetY] == 0) { tileCoord[targetX, targetY] = 1; }
+        //else { tileCoord[targetX, targetY] = 0; }
+
+        tileCoord[targetX, targetY] = status;
     }
 
 
