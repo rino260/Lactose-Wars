@@ -18,9 +18,13 @@ public class UnitData : MonoBehaviour
     string tileTag = "Tile";
     public List<Transform> pieceSegments;
 
-
-    int remainingMovement;
-    bool shouldMove;
+    //Internal references that need to be public for the CollisionManagement scripts
+    [HideInInspector]
+    public int remainingMovement;
+    [HideInInspector]
+    public bool shouldMove;
+    [HideInInspector]
+    public Quaternion currentRot;
     Vector3 destination;
 
     public List<Node> currentPath = null;
@@ -30,7 +34,7 @@ public class UnitData : MonoBehaviour
     {
         //Initialize our desitination to be set later
         destination = transform.position;
-        ToggleOccupiedHexes(1);
+        StartCoroutine(ToggleOccupiedHexes(1, 0f, false));
     }
 
 
@@ -66,11 +70,13 @@ public class UnitData : MonoBehaviour
 
     public void InitializeMovement()
     {
-        //Each time the "next turn" button is pressed it initializes the next "step" of gameplay
-        //Establish our unit's total amount of movement, set the tiles beneath the ship to walkable, and begin moving
+        //Each time the "next turn" button is pressed it initializes the next "step" of gameplay for all units tied to the button
+        //Reset our unit's total amount of movement
         remainingMovement = movespeed;
-        ToggleOccupiedHexes(0);
-        StepForward();
+        //Because we need to toggle the hexes below the ship to be walkable before movement begins, we check if the ship has a valid path
+        //If the ship has a valid path we know it is ready to move so we toggle the hexes to be walkable and pass our coroutine the go ahead to execute the "stepforward" method
+        if (currentPath != null) { StartCoroutine(ToggleOccupiedHexes(0, 0.1f, true)); }
+        //StepForward();
     }
 
 
@@ -78,12 +84,8 @@ public class UnitData : MonoBehaviour
     {
         if (remainingMovement > 0)
         {
-            //Make sure we actually have a valid path, if not return out of the function and toggle the tiles beneath the ship to occupied
-            if (currentPath == null)
-            {
-                ToggleOccupiedHexes(1);
-                return;
-            }
+            //Make sure we actually have a valid path, if not return out of the function
+            if (currentPath == null) { return; }
             //Update our unit's current tile position data
             hexX = currentPath[1].x;
             hexY = currentPath[1].y;
@@ -115,7 +117,11 @@ public class UnitData : MonoBehaviour
             targetLocation = Vector3.ClampMagnitude(targetLocation, distFromTarget.magnitude);
             //Move our unit to our target location
             transform.Translate(targetLocation);
-            //Once the unit has moved to its destination, tell it to stop moving and move to the next step method
+            
+            //Save the current rotation for use in the CollisionManager scripts
+            currentRot = transform.GetChild(0).rotation;
+            
+            //Once the unit has moved to its destination, tell it to stop moving, toggle the hexes under it to occupied, and move to the next step method
             if (transform.position == destination)
             {
                 shouldMove = false;
@@ -129,21 +135,22 @@ public class UnitData : MonoBehaviour
     {
         //Remove the previous tile from the list
         currentPath.RemoveAt(0);
-        //If the tile we just moved to is the only tile left in the list, we have reached our target so clear our list and toggle the hexes under us to occupied
-        if (currentPath.Count == 1)
-        {
-            ToggleOccupiedHexes(1);
-            currentPath = null;
-        }
+        //If the tile we just moved to is the only tile left in the list, we have reached our target so clear our list
+        if (currentPath.Count == 1) { currentPath = null; }
         //We then need to decrement our movement cost
         remainingMovement--;
+        //If we run out of movement or reach our desintation toggle the hexes underneath us to be occupied
+        if (remainingMovement == 0 || transform.position == destination) { StartCoroutine(ToggleOccupiedHexes(1, 0.25f, false)); }
         //Continue moving if applicaple
         StepForward();
     }
 
 
-    void ToggleOccupiedHexes(int status)
+    IEnumerator ToggleOccupiedHexes(int status, float delay, bool move)
     {
+        //We want to control when our hexes will be toggled on a more predicatble/precise interval than in the update function so we will use a delay variable to control this behavior
+        yield return new WaitForSeconds(delay);
+
         for (int i = 0; i < pieceSegments.Count; i++)
         {
             RaycastHit hit;
@@ -156,5 +163,7 @@ public class UnitData : MonoBehaviour
                 grid.ToggleHex(hitX, hitY, status);
             }
         }
+        //Instead of handling this call in the update function we need it to be imbedded within our toggle hex method to ensure we will be able to execute the toggle function before the unit moves
+        if (move) { StepForward(); }
     }
 }

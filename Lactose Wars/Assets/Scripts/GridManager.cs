@@ -14,7 +14,7 @@ public class GridManager : MonoBehaviour
     public int gridSizeY;
 
     public TileType[] tileTypes;
-    int[,] tileCoord;
+    int[,] tileCoord; 
     Node[,] graph;
 
     float xOffset = 0.866f;
