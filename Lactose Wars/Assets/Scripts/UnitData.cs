@@ -23,8 +23,6 @@ public class UnitData : MonoBehaviour
     public int remainingMovement;
     [HideInInspector]
     public bool shouldMove;
-    [HideInInspector]
-    public Quaternion currentRot;
     Vector3 destination;
 
     public List<Node> currentPath = null;
@@ -117,10 +115,6 @@ public class UnitData : MonoBehaviour
             targetLocation = Vector3.ClampMagnitude(targetLocation, distFromTarget.magnitude);
             //Move our unit to our target location
             transform.Translate(targetLocation);
-            
-            //Save the current rotation for use in the CollisionManager scripts
-            currentRot = transform.GetChild(0).rotation;
-            
             //Once the unit has moved to its destination, tell it to stop moving, toggle the hexes under it to occupied, and move to the next step method
             if (transform.position == destination)
             {

@@ -7,19 +7,24 @@ public class CollisionManager : MonoBehaviour
 {
     Rigidbody rb;
     Collider col;
+    Vector3 startPos;
+    Quaternion startRot;
     public UnitData shipPathing;
 
     Node lastNode;
-    Quaternion lastRot;
+    Node conflictNode;
     bool ship = false;
     string shipTag = "Ship";
 
 
     void Awake()
     {
+        //Initialize and record the ship's components and transform
         rb = GetComponent<Rigidbody>();
         rb.useGravity = false;
         col = GetComponent<Collider>();
+        startPos = transform.localPosition;
+        startRot = transform.localRotation;
 
         if (this.gameObject.tag == shipTag) { ship = true; }
     }
@@ -29,18 +34,18 @@ public class CollisionManager : MonoBehaviour
     {
         if(ship && otherCol.gameObject.tag == shipTag)
         {
-            //We need to do a little math to ensure this ship can move entirely out of the way of the other ship
-            if (shipPathing.remainingMovement >= shipPathing.pieceSegments.Count + 1)
+            //If the ship has enough movement left to move its entire unit length out of the way AND the ship's current path is long enough to allow this
+            if (shipPathing.remainingMovement >= shipPathing.pieceSegments.Count + 1 && shipPathing.currentPath.Count - 1 > shipPathing.pieceSegments.Count + 1) 
             {
-                //If so we can tell our coroutine to temporarily ignore the collision between the two ships
+                //Tell our coroutine to temporarily ignore the collision between the two ships for a specified period of time
                 StartCoroutine(PhaseThrough(otherCol.collider, 0.5f));
+                return;
             }
             else
             {
-                //Quickly save the ships rotation information from the last node
-                lastRot = shipPathing.currentRot;
-                //When the ships collide, grab the node they are coming from
+                //On collision, grab both the node the ship is coming from and the node the ship is attempting to move to
                 lastNode = shipPathing.currentPath[0];
+                conflictNode = shipPathing.currentPath[1];
                 //Eject out of the current pathfinding, and cancel the current path
                 shipPathing.shouldMove = false;
                 shipPathing.currentPath = null;
@@ -48,17 +53,26 @@ public class CollisionManager : MonoBehaviour
                 int nodeX = lastNode.x;
                 int nodeY = lastNode.y;
                 transform.root.position = shipPathing.grid.ConvertTileCoordToWorldCoord(nodeX, nodeY);
-                
-                //Reset the ships rotation
-                transform.parent.rotation = lastRot; 
-//MAYBE INSTEAD OF THIS YOU CAN SAVE THE LAST TWO NODES AND DO A REVERSE LOOK AT WHERE THE END OF THE SHIP LOOKS AT IT INSTEAD OF THE FRONT???
-               
-                //Zero out the velocity of both ships to prevent drifting
+                //Update our ship's unitdata with the updated node position since we weren't able to complete our path
+                shipPathing.hexX = nodeX;
+                shipPathing.hexY = nodeY;
+
+                //Convert the conflict node into a vector3
+                Vector3 conflictNodePos = shipPathing.grid.ConvertTileCoordToWorldCoord(conflictNode.x, conflictNode.y);
+                //Calculate the vector from where we are to where we need to look at
+                Vector3 rotationVector = conflictNodePos - transform.root.position;
+                //Calculate the rotation the unit will need to make to point towards the target
+                Quaternion rotation = Quaternion.LookRotation(rotationVector);
+                //Lock the rotation to the Y axis
+                rotationVector.y = 0;
+                //Re-align the ship's rotation after the collision
+                transform.parent.rotation = rotation;
+
+                //Zero out the ship's velocity to prevent drifting
                 rb.velocity = Vector3.zero;
-                otherCol.gameObject.GetComponent<Rigidbody>().velocity = Vector3.zero;
-
-
-//CALCULATE THE SHIPS ROTATIONS BEFORE THE COLLISION AND RESET THEIR ROTATIONS AS WELL AS THEIR VELOCITIES
+                //Reset the ship model's native position and rotation
+                transform.localPosition = startPos;
+                transform.localRotation = startRot;
             }
         }
     }
