@@ -24,6 +24,8 @@ public class UnitData : MonoBehaviour
     [HideInInspector]
     public bool shouldMove;
     Vector3 destination;
+    [HideInInspector]
+    public GameObject endTile;
 
     public List<Node> currentPath = null;
 
@@ -159,5 +161,12 @@ public class UnitData : MonoBehaviour
         }
         //Instead of handling this call in the update function we need it to be imbedded within our toggle hex method to ensure we will be able to execute the toggle function before the unit moves
         if (move) { StepForward(); }
+    }
+
+
+    public void ToggleClickableHex(bool enable)
+    {
+        if(enable) { endTile.transform.GetChild(0).GetComponent<Collider>().enabled = true; }
+        else { endTile.transform.GetChild(0).GetComponent<Collider>().enabled = false; }
     }
 }

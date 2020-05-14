@@ -144,11 +144,25 @@ public class MouseManager : MonoBehaviour
 
     void CheckMouseClick()
     {
-        //If we click the left mouse button, are selecting a tile, and have placed all of our units:
-        if (Input.GetMouseButtonDown(0) && hitTile != null && !placing)
+        //If we click the left mouse button, are selecting a tile, are placing our units, and have a selected unit:
+        if (Input.GetMouseButtonDown(0) && hitTile != null && !placing && gridManager.selectedUnit != null)
         {
             //Use the X and Y coordinates from the clicked hex and call the "GeneratePathTo" function on our GridManager using its coordinates
             hitTile.root.GetComponent<GridManager>().GeneratePathTo(hitTileX, hitTileY);
+
+            //If our selected unit already has a final destination recorded, enable its collider, record the new tile, and turn off the new tile's collider
+            if(gridManager.selectedUnit.GetComponent<UnitData>().endTile != null)
+            {
+                gridManager.selectedUnit.GetComponent<UnitData>().ToggleClickableHex(true);
+                gridManager.selectedUnit.GetComponent<UnitData>().endTile = hitTile.gameObject;
+                gridManager.selectedUnit.GetComponent<UnitData>().ToggleClickableHex(false);
+            }
+            //Otherwise record the new tile and turn off its collider
+            else
+            {
+                gridManager.selectedUnit.GetComponent<UnitData>().endTile = hitTile.gameObject;
+                gridManager.selectedUnit.GetComponent<UnitData>().ToggleClickableHex(false);
+            }
         }
 
         //If we click the left mouse button, are selecting a ship, and have placed all of our units:
@@ -174,11 +188,5 @@ public class MouseManager : MonoBehaviour
             shipCounter++;
             if (shipCounter == ships.Count) { placing = false; }
         }
-
-//TEMPORARY TEST TO SEE IF WE CAN CONTROL A TILE'S WALKABILITY
-        /*if (Input.GetMouseButtonDown(1) && hitTile != null)
-        {
-            hitTile.root.GetComponent<GridManager>().ToggleHex(hitTileX, hitTileY);
-        }*/
     }
 }
