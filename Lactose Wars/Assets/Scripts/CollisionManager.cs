@@ -46,10 +46,11 @@ public class CollisionManager : MonoBehaviour
                 //On collision, grab both the node the ship is coming from and the node the ship is attempting to move to
                 lastNode = shipPathing.currentPath[0];
                 conflictNode = shipPathing.currentPath[1];
-                //Eject out of the current pathfinding, cancel the current path, and disable the selected tile FX
+                //Eject out of the current pathfinding, cancel the current path, disable the selected tile FX, and clear the path visual
                 shipPathing.shouldMove = false;
                 shipPathing.currentPath = null;
                 shipPathing.selectedTileFX.SetActive(false);
+                shipPathing.path.positionCount = 0;
                 //Using the node data, calculate the position of the node before the collision occured and reset the ship's position to that node
                 int nodeX = lastNode.x;
                 int nodeY = lastNode.y;

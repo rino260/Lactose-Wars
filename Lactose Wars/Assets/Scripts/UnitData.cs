@@ -32,7 +32,8 @@ public class UnitData : MonoBehaviour
     public GameObject endTile;
 
     public List<Node> currentPath = null;
-    LineRenderer path;
+    [HideInInspector]
+    public LineRenderer path;
 
 
     private void Start()
@@ -50,12 +51,12 @@ public class UnitData : MonoBehaviour
 
     void Update()
     {
-        DrawPathingLine();
+        //DrawPathingLine();
         AnimateMovement();
     }
 
 
-    void DrawPathingLine()
+    public void DrawPathingLine()
     {
         /*
         //We only want to draw a line if we have a path
@@ -116,6 +117,7 @@ public class UnitData : MonoBehaviour
             //Set our destination to be the next tile in the path
             destination = grid.ConvertTileCoordToWorldCoord(hexX, hexY);
             shouldMove = true;
+            DrawPathingLine();
         }
     }
 

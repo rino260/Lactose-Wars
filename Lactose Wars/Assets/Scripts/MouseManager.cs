@@ -117,6 +117,7 @@ public class MouseManager : MonoBehaviour
             hitTile.root.GetComponent<GridManager>().GeneratePathTo(hitTileX, hitTileY);
             selectedUnitData.selectedTileFX.transform.position = hitTile.transform.position;
             selectedUnitData.selectedTileFX.SetActive(true);
+            selectedUnitData.DrawPathingLine();
 
             //If our selected unit already has a final destination recorded, enable its collider, record the new tile, and turn off the new tile's collider
             if (selectedUnitData.endTile != null)
