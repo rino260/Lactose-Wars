@@ -6,6 +6,7 @@ using UnityEngine;
 //The following code has been adapted from "Quill18creates" tile movement video tutorials series found here:
 //https://www.youtube.com/watch?v=kYeTW2Zr8NA and here https://www.youtube.com/watch?v=td3O1tkbqYQ
 
+[RequireComponent(typeof(LineRenderer))]
 public class UnitData : MonoBehaviour
 {
     public int hexX;
@@ -17,6 +18,9 @@ public class UnitData : MonoBehaviour
     public int turningAnimationMultiplier;
     string tileTag = "Tile";
     public List<Transform> pieceSegments;
+    public GameObject selectedTileFXPrefab;
+    [HideInInspector]
+    public GameObject selectedTileFX;
 
     //Internal references that need to be public for the CollisionManagement scripts
     [HideInInspector]
@@ -28,6 +32,7 @@ public class UnitData : MonoBehaviour
     public GameObject endTile;
 
     public List<Node> currentPath = null;
+    LineRenderer path;
 
 
     private void Start()
@@ -35,6 +40,11 @@ public class UnitData : MonoBehaviour
         //Initialize our desitination to be set later
         destination = transform.position;
         StartCoroutine(ToggleOccupiedHexes(1, 0f, false));
+        //Create our selected tile VFX and hide it for future use
+        selectedTileFX = Instantiate(selectedTileFXPrefab, Vector3.zero, Quaternion.identity, null);
+        selectedTileFX.SetActive(false);
+        //Initialize our line renderer
+        path = GetComponent<LineRenderer>();
     }
 
 
@@ -47,6 +57,7 @@ public class UnitData : MonoBehaviour
 
     void DrawPathingLine()
     {
+        /*
         //We only want to draw a line if we have a path
         if (currentPath != null)
         {
@@ -63,6 +74,19 @@ public class UnitData : MonoBehaviour
                 Debug.DrawLine(start, end, Color.white);
                 //Increment our while loop and repeat the above for each node in our path
                 currentNode++;
+            }
+        }
+        */
+
+        if(currentPath != null)
+        {
+            path.positionCount = currentPath.Count;
+
+            for (int i = 0; i < currentPath.Count; i++)
+            {
+                Vector3 vertex = grid.ConvertTileCoordToWorldCoord(currentPath[i].x, currentPath[i].y);
+
+                path.SetPosition(i, vertex);
             }
         }
     }
@@ -117,7 +141,7 @@ public class UnitData : MonoBehaviour
             targetLocation = Vector3.ClampMagnitude(targetLocation, distFromTarget.magnitude);
             //Move our unit to our target location
             transform.Translate(targetLocation);
-            //Once the unit has moved to its destination, tell it to stop moving, toggle the hexes under it to occupied, and move to the next step method
+            //Once the unit has moved to its destination, tell it to stop moving, toggle the hexes under it to occupied, move to the next step method, and disable the selected tile FX
             if (transform.position == destination)
             {
                 shouldMove = false;
@@ -131,8 +155,12 @@ public class UnitData : MonoBehaviour
     {
         //Remove the previous tile from the list
         currentPath.RemoveAt(0);
-        //If the tile we just moved to is the only tile left in the list, we have reached our target so clear our list
-        if (currentPath.Count == 1) { currentPath = null; }
+        //If the tile we just moved to is the only tile left in the list, we have reached our target so clear our list and turn off the selected tile FX
+        if (currentPath.Count == 1)
+        {
+            currentPath = null;
+            selectedTileFX.SetActive(false);
+        }
         //We then need to decrement our movement cost
         remainingMovement--;
         //If we run out of movement or reach our desintation toggle the hexes underneath us to be occupied

@@ -70,7 +70,5 @@ MonoBehaviour:
   ships:
   - {fileID: 8882834596935181967, guid: 57321c9f8ebf7be449838c8c7655961e, type: 3}
   - {fileID: 8882834596935181967, guid: 57321c9f8ebf7be449838c8c7655961e, type: 3}
-  highlightMat: {fileID: 2100000, guid: 4a732e7f8d988b74eb53b80aacb99e6c, type: 2}
-  highlightOffset: 1.5
-  highlightSpeed: 0.1
-  highlightScale: 2
+  tileHilghlightFXPrefab: {fileID: 7030129925686469240, guid: e55b1a27be97fef459918a005951eb63,
+    type: 3}

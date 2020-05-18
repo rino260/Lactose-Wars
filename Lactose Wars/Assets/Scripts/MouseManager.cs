@@ -12,32 +12,29 @@ public class MouseManager : MonoBehaviour
     public GridManager gridManager;
     public Button nextTurnButton;
     public List<GameObject> ships;
-    //Since we will be using this to check 
     int shipCounter;
     bool placing;
 
     //Inspector variables to allow customizing highlight behavior
-    public Material highlightMat;
-    [Range(0f, 3f)]
-    public float highlightOffset;
-    [Range(0f, 1f)]
-    public float highlightSpeed;
-    [Range(0.1f, 4f)]
-    public float highlightScale;
-
-    //Internal references from which to calculate highlight information
     string tileTag = "Tile";
     string shipTag = "Ship";
-    Transform hitTile; //Create a reference for the hit tile gameobject
-    Transform hitShip; //Create a reference for the hit ship gameobject
-    Vector3 defaultPos; //Create a reference to the hit tile's default position
-    Vector3 targetPos; //Create a dynamic/temporary reference to the position we want to lerp the hit tile to
-    Vector3 defaultScale; //Create a reference to the hit tile's default scale
-    Material defaultMat; //Create a reference to the hit tile's default material
+    Transform hitTile;
+    Transform hitShip;
+    //Tile highlight information
+    public GameObject tileHilghlightFXPrefab;
+    GameObject tileHighlightFX;
 
     //Internal reference for clicked tiles 
     int hitTileX;
     int hitTileY;
+
+
+    void Start()
+    {
+        //Create our highlight VFX and hide it for future use
+        tileHighlightFX = Instantiate(tileHilghlightFXPrefab, Vector3.zero, Quaternion.identity, null);
+        tileHighlightFX.SetActive(false);
+    }
 
 
     public void SpawnUnit()
@@ -72,30 +69,19 @@ public class MouseManager : MonoBehaviour
             //If we hit a tile:
             if (hitInfo.collider.tag == tileTag)
             {
-                //If the tile we hit has not been defined:
-                if (hitTile == null)
-                {
-                    //Define what tile we hit
-                    hitTile = hitInfo.collider.transform.parent;
-                    //Highlight that tile
-                    Highlight();
-                }
-                //If the parent of the tile we are hitting is different from the parent of the tile we have defined:
-                else if (hitInfo.transform.parent != hitTile)
-                {
-                    //Un-highlight it
-                    ResetHighlight();
-                    //Define the new tile we are now hitting
-                    hitTile = hitInfo.collider.transform.parent;
-                    //Highlight the new tile
-                    Highlight();
-                }
+                //Define what tile we hit
+                hitTile = hitInfo.collider.transform.parent;
+                //Grab our hit tile's coordinate information
+                hitTileX = hitTile.GetComponentInChildren<HexData>().xCoord;
+                hitTileY = hitTile.GetComponentInChildren<HexData>().yCoord;
+                //Highlight that tile
+                Highlight(hitInfo);
             }
             //If we are hitting something that is not a tile:
-            else if (hitTile != null)
+            else if (hitInfo.collider != hitTile)
             {
-                //Clear the stored information of the tile we are coming from and un-highlight it
-                ResetHighlight();
+                //Clear the previous tile's stored information and un-highlight it
+                ResetHighlight(hitInfo);
                 hitTile = null;
             }
             //If we hit a ship, define a reference to its root, otherwise clear any stored info
@@ -106,39 +92,18 @@ public class MouseManager : MonoBehaviour
     }
 
 
-    void Highlight()
+    void Highlight(RaycastHit hitObj)
     {
-        //Extract the X and Y coordinates from the hit tile
-        hitTileX = hitTile.GetComponentInChildren<HexData>().xCoord;
-        hitTileY = hitTile.GetComponentInChildren<HexData>().yCoord;
-
-//TEMPORARY USER FEEDBACK, REPLACE WITH A VFX EFFECT OR TEMPORARY HEX TILE SO WE STOP GETTING THE TWITCHING ISSUE
-        //Cache the hit tile's default material and default world position
-        defaultMat = hitTile.GetComponentInChildren<MeshRenderer>().material;
-        defaultPos = hitTile.position;
-        defaultScale = hitTile.localScale;
-
-        //Apply a highlighted material to the hit tile and disable collisions
-        hitTile.GetComponentInChildren<MeshRenderer>().material = highlightMat;
-
-        //Calculate the hit tile's target position using our pre-defined offset, and lerp it to that position
-        targetPos = new Vector3(defaultPos.x, defaultPos.y + highlightOffset, defaultPos.z);
-        hitTile.position = Vector3.Lerp(defaultPos, targetPos, highlightSpeed);
-        //Lerp the hit tile's local scale by our pre-defined scale factor
-        hitTile.localScale = Vector3.Lerp(transform.localScale, transform.localScale * highlightScale, highlightSpeed);
+        //Enable and move our highlight effect to the hit tile's position
+        tileHighlightFX.SetActive(true);
+        tileHighlightFX.transform.position = hitTile.transform.position;
     }
 
 
-    void ResetHighlight()
+    void ResetHighlight(RaycastHit hitObj)
     {
-        //Change the hit tile back to its default material and enable collisions
-        hitTile.GetComponentInChildren<MeshRenderer>().material = defaultMat;
-
-        //Reset the hit tile's target position to its default position, and then lerp it there
-        targetPos = defaultPos;
-        hitTile.position = Vector3.Lerp(targetPos, defaultPos, highlightSpeed);
-        //Reset the hit tile's local scale
-        hitTile.localScale = Vector3.Lerp(transform.localScale, defaultScale, highlightSpeed);
+        //Turn off our highlight effect
+        tileHighlightFX.SetActive(false);
     }
 
 
@@ -147,21 +112,24 @@ public class MouseManager : MonoBehaviour
         //If we click the left mouse button, are selecting a tile, are placing our units, and have a selected unit:
         if (Input.GetMouseButtonDown(0) && hitTile != null && !placing && gridManager.selectedUnit != null)
         {
+            UnitData selectedUnitData = gridManager.selectedUnit.GetComponent<UnitData>();
             //Use the X and Y coordinates from the clicked hex and call the "GeneratePathTo" function on our GridManager using its coordinates
             hitTile.root.GetComponent<GridManager>().GeneratePathTo(hitTileX, hitTileY);
+            selectedUnitData.selectedTileFX.transform.position = hitTile.transform.position;
+            selectedUnitData.selectedTileFX.SetActive(true);
 
             //If our selected unit already has a final destination recorded, enable its collider, record the new tile, and turn off the new tile's collider
-            if(gridManager.selectedUnit.GetComponent<UnitData>().endTile != null)
+            if (selectedUnitData.endTile != null)
             {
-                gridManager.selectedUnit.GetComponent<UnitData>().ToggleClickableHex(true);
-                gridManager.selectedUnit.GetComponent<UnitData>().endTile = hitTile.gameObject;
-                gridManager.selectedUnit.GetComponent<UnitData>().ToggleClickableHex(false);
+                selectedUnitData.ToggleClickableHex(true);
+                selectedUnitData.endTile = hitTile.gameObject;
+                selectedUnitData.ToggleClickableHex(false);
             }
             //Otherwise record the new tile and turn off its collider
             else
             {
-                gridManager.selectedUnit.GetComponent<UnitData>().endTile = hitTile.gameObject;
-                gridManager.selectedUnit.GetComponent<UnitData>().ToggleClickableHex(false);
+                selectedUnitData.endTile = hitTile.gameObject;
+                selectedUnitData.ToggleClickableHex(false);
             }
         }
 
