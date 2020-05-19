@@ -20,9 +20,14 @@ public class MouseManager : MonoBehaviour
     string shipTag = "Ship";
     Transform hitTile;
     Transform hitShip;
+    int objType;
     //Tile highlight information
     public GameObject tileHilghlightFXPrefab;
     GameObject tileHighlightFX;
+    //Ship highlight & selection information
+    public Material shipHighlightMat;
+    public Material shipSelectedMat;
+    MeshRenderer fxMesh;
 
     //Internal reference for clicked tiles 
     int hitTileX;
@@ -75,35 +80,72 @@ public class MouseManager : MonoBehaviour
                 hitTileX = hitTile.GetComponentInChildren<HexData>().xCoord;
                 hitTileY = hitTile.GetComponentInChildren<HexData>().yCoord;
                 //Highlight that tile
+                objType = 1;
                 Highlight(hitInfo);
             }
             //If we are hitting something that is not a tile:
             else if (hitInfo.collider != hitTile)
             {
                 //Clear the previous tile's stored information and un-highlight it
+                objType = 1;
                 ResetHighlight(hitInfo);
                 hitTile = null;
             }
-            //If we hit a ship, define a reference to its root, otherwise clear any stored info
-//INCORPORATE HIGHLIGHT FUNCTIONALITY FOR SELECTED SHIPS
-            if(hitInfo.collider.tag == shipTag) { hitShip = hitInfo.collider.transform.root; }
-            else if (hitInfo.collider.tag != shipTag) { hitShip = null; }
+            //If we hit a ship, define a reference to its root
+            if (hitInfo.collider.tag == shipTag)
+            {
+                hitShip = hitInfo.collider.transform.root;
+                fxMesh = hitShip.GetComponent<UnitData>().FXMesh;
+                objType = 2;
+                Highlight(hitInfo);
+
+            }
+            //If we are hitting something other than a ship, unhighlight our stored ship and set our hit ship to null
+            else if (hitInfo.collider != hitShip)
+            {
+                objType = 2;
+                ResetHighlight(hitInfo);
+                hitShip = null;
+            }
         }
     }
 
 
     void Highlight(RaycastHit hitObj)
     {
-        //Enable and move our highlight effect to the hit tile's position
-        tileHighlightFX.SetActive(true);
-        tileHighlightFX.transform.position = hitTile.transform.position;
+        switch(objType)
+        {
+            case 1:
+                //Enable and move our highlight effect to the hit tile's position
+                tileHighlightFX.SetActive(true);
+                tileHighlightFX.transform.position = hitTile.transform.position;
+                break;
+            case 2:
+                fxMesh.enabled = true;
+                break;
+            default:
+                break;
+        }
     }
 
 
     void ResetHighlight(RaycastHit hitObj)
     {
-        //Turn off our highlight effect
-        tileHighlightFX.SetActive(false);
+        switch (objType)
+        {
+            case 1:
+                //Turn off our highlight effect
+                tileHighlightFX.SetActive(false);
+                break;
+            case 2:
+                if (fxMesh != null && gridManager.selectedUnit != hitObj.transform.root.gameObject)
+                {
+                    fxMesh.enabled = false;
+                }
+                break;
+            default:
+                break;
+        }
     }
 
 
@@ -137,7 +179,12 @@ public class MouseManager : MonoBehaviour
         //If we click the left mouse button, are selecting a ship, and have placed all of our units:
         if (Input.GetMouseButtonDown(0) && hitShip != null && !placing)
         {
+            //Reverse the selected unit VFX on the previous selected unit
+            gridManager.selectedUnit.GetComponent<UnitData>().FXMesh.material = shipHighlightMat;
+            //Set our selected unit
             gridManager.selectedUnit = hitShip.gameObject;
+            //Enable our selected unit VFX on the new selected unit
+            fxMesh.material = shipSelectedMat;
         }
 
         //If we have not placed all of our units

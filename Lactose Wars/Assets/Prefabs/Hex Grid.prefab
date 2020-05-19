@@ -72,3 +72,5 @@ MonoBehaviour:
   - {fileID: 8882834596935181967, guid: 57321c9f8ebf7be449838c8c7655961e, type: 3}
   tileHilghlightFXPrefab: {fileID: 7030129925686469240, guid: e55b1a27be97fef459918a005951eb63,
     type: 3}
+  shipHighlightMat: {fileID: 2100000, guid: a88362eb240a35944bad506e9140305b, type: 2}
+  shipSelectedMat: {fileID: 2100000, guid: 9bc2b2ee6bdb390418d2a3b0eb6be90f, type: 2}

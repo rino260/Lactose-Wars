@@ -19,8 +19,10 @@ public class UnitData : MonoBehaviour
     string tileTag = "Tile";
     public List<Transform> pieceSegments;
     public GameObject selectedTileFXPrefab;
+    public MeshRenderer FXMesh;
     [HideInInspector]
     public GameObject selectedTileFX;
+
 
     //Internal references that need to be public for the CollisionManagement scripts
     [HideInInspector]
@@ -51,42 +53,27 @@ public class UnitData : MonoBehaviour
 
     void Update()
     {
-        //DrawPathingLine();
         AnimateMovement();
     }
 
 
     public void DrawPathingLine()
     {
-        /*
-        //We only want to draw a line if we have a path
+        //Clear out any outdated information
+        path.positionCount = 0;
+
         if (currentPath != null)
         {
-            int currentNode = 0;
-
-            while (currentNode < currentPath.Count - 1)
-            {
-                //Using our path information from our gridmanager, find our current node and the next node
-                Vector3 start = grid.ConvertTileCoordToWorldCoord(currentPath[currentNode].x, currentPath[currentNode].y);
-                Vector3 end = grid.ConvertTileCoordToWorldCoord(currentPath[currentNode + 1].x, currentPath[currentNode + 1].y);
-//TEMPORARY SOLUTION FOR THE PURPOSESE OF TESTING, ADD IN LINE DRAWING FUNCTIONALITY INTO PLAY MODE LATER
-//ONLY MAKE THIS LINE VISIBLE TO THE SHIPS PLAYER
-                //Draw a line between our current node and our next node
-                Debug.DrawLine(start, end, Color.white);
-                //Increment our while loop and repeat the above for each node in our path
-                currentNode++;
-            }
-        }
-        */
-
-        if(currentPath != null)
-        {
+            //Set the number of vertexes in our path
             path.positionCount = currentPath.Count;
+            Vector3 vertex;
 
-            for (int i = 0; i < currentPath.Count; i++)
+            //Loop through our path positions and create line vertices at each tiles position in the current path
+            for (int i = 0; i < path.positionCount; i++)
             {
-                Vector3 vertex = grid.ConvertTileCoordToWorldCoord(currentPath[i].x, currentPath[i].y);
-
+                //Convert each tile coordinate in our list into a Vector 3 and feed each position into our line vertex list
+                vertex = grid.ConvertTileCoordToWorldCoord(currentPath[i].x, currentPath[i].y);
+                vertex.y = 0.25f;
                 path.SetPosition(i, vertex);
             }
         }
@@ -143,7 +130,7 @@ public class UnitData : MonoBehaviour
             targetLocation = Vector3.ClampMagnitude(targetLocation, distFromTarget.magnitude);
             //Move our unit to our target location
             transform.Translate(targetLocation);
-            //Once the unit has moved to its destination, tell it to stop moving, toggle the hexes under it to occupied, move to the next step method, and disable the selected tile FX
+            //Once the unit has moved to its destination, tell it to stop moving and move to the next step in the list
             if (transform.position == destination)
             {
                 shouldMove = false;
@@ -157,16 +144,21 @@ public class UnitData : MonoBehaviour
     {
         //Remove the previous tile from the list
         currentPath.RemoveAt(0);
-        //If the tile we just moved to is the only tile left in the list, we have reached our target so clear our list and turn off the selected tile FX
+        //If the tile we just moved to is the only tile left in the list, we have reached our target so clear our path information, update our pathing visual, and turn off the selected tile FX
         if (currentPath.Count == 1)
         {
             currentPath = null;
             selectedTileFX.SetActive(false);
+            DrawPathingLine();
         }
         //We then need to decrement our movement cost
         remainingMovement--;
-        //If we run out of movement or reach our desintation toggle the hexes underneath us to be occupied
-        if (remainingMovement == 0 || transform.position == destination) { StartCoroutine(ToggleOccupiedHexes(1, 0.25f, false)); }
+        //If we run out of movement or reach our desintation toggle the hexes underneath us to be occupied and update our pathing visual
+        if (remainingMovement == 0 || transform.position == destination)
+        {
+            DrawPathingLine();
+            StartCoroutine(ToggleOccupiedHexes(1, 0.25f, false));
+        }
         //Continue moving if applicaple
         StepForward();
     }
